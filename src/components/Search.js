@@ -11,8 +11,7 @@ import {
 
 const Search = (props) => {
   // Make sure to destructure setIsLoading and setSearchResults from the props
-
-
+const { setIsLoading, setSearchResult } = props;
   /**
    * We are at the Search component, a child of app. This has a form, so we need to use useState for
    * our controlled inputs:
@@ -23,8 +22,11 @@ const Search = (props) => {
    * century, setCentury (default should be the string 'any')
    * classification, setClassification (default should be the string 'any')
    */
-
-
+  const [centuryList, setCenturyList] = useState([]);
+  const [classificationList, setClassificationList] = useState([]);
+  const [queryString, setQuerySting] = useState('');
+  const [century, setCentury] = useState('any');
+  const [classification, setClassification] = useState('any');
   /**
    * Inside of useEffect, use Promise.all([]) with fetchAllCenturies and fetchAllClassifications
    * 
@@ -32,10 +34,15 @@ const Search = (props) => {
    * 
    * Make sure to console.error on caught errors from the API methods.
    */
-  useEffect(() => {
-
+   useEffect(() => {
+    const func = async () => {
+      const allCenturies = await fetchAllCenturies();
+      const allClassifications = await fetchAllClassifications();
+      setCenturyList(allCenturies);
+      setClassificationList(allClassifications);
+    };
+    func();
   }, []);
-
   /**
    * This is a form element, so we need to bind an onSubmit handler to it which:
    * 
@@ -54,25 +61,41 @@ const Search = (props) => {
    */
   return <form id="search" onSubmit={async (event) => {
     // write code here
+    event.preventDefault()
+    setIsLoading(true);
+    try {
+      const result = await fetchQueryResults({ century, classification, queryString })
+      setSearchResult(result)
+    }
+    catch(error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false)
+    }
   }}>
     <fieldset>
       <label htmlFor="keywords">Query</label>
       <input 
-        id="keywords" 
+        id="keywords"  
         type="text" 
         placeholder="enter keywords..." 
-        value={/* this should be the query string */} 
-        onChange={/* this should update the value of the query string */}/>
+        value={ queryString } 
+        onChange={ event => setQuerySting(event.target.value) }/>
     </fieldset>
     <fieldset>
       <label htmlFor="select-classification">Classification <span className="classification-count">({ classificationList.length })</span></label>
       <select 
         name="classification"
         id="select-classification"
-        value={/* this should be the classification */} 
-        onChange={/* this should update the value of the classification */}>
+        value={ classification } 
+        onChange={ event => setClassification(event.target.value) }>
         <option value="any">Any</option>
         {/* map over the classificationList, return an <option /> */}
+        {classificationList.map((classified) => {
+          return (
+            <option key={classified.id} value={classified}>{classified.name}</option>
+          )
+        })}
       </select>
     </fieldset>
     <fieldset>
@@ -80,10 +103,15 @@ const Search = (props) => {
       <select 
         name="century" 
         id="select-century"
-        value={/* this should be the century */} 
-        onChange={/* this should update the value of the century */}>
+        value={ century } 
+        onChange={ event => setCentury(event.target.value) }>
         <option value="any">Any</option>
         {/* map over the centuryList, return an <option /> */}
+        {centuryList.map((sentshere) => {
+          return (
+            <option key={sentshere.key} value={sentshere.key}>{sentshere.name}</option>
+          )
+        })}
       </select>
      </fieldset>
     <button>SEARCH</button>
